@@ -1,0 +1,143 @@
+{% load staticfiles %}
+<!doctype html>
+<html>
+  <head>
+    <title>Django ChatterBot Example</title>
+    <link rel="stylesheet" href="{% static 'css/bootstrap.css' %}"/>
+    <link rel="stylesheet" href="{% static 'css/custom.css' %}"/>
+    <style type="text/css">
+    .chat-log {
+      max-height:400px;
+      overflow-y:scroll;
+    }
+    div.card{
+      width: 20rem;
+      position: relative;
+      margin-left: 68%;
+    }
+    </style>
+  </head>
+  <body>
+
+    {% include 'nav.html' %}
+
+    <div class="container">
+
+      <div class="jumbotron mt-1">
+        <h1 class="jumbotron-heading text-xs-center">Django ChatterBot Example</h1>
+        <p class="lead text-xs-center">
+          This is a web app that allows you to talk to ChatterBot.
+        </p>
+
+        <hr class="my-2">
+
+        <div class="row">
+          <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+            <ul class="list-group chat-log js-chat-log">
+            </ul>
+            <div class="input-group input-group-lg mt-1">
+              <input type="text" class="form-control js-text" placeholder="Type something to begin..."/>
+              <span class="input-group-btn">
+                <button class="btn btn-primary js-say">Submit</button>
+              </span>
+            </div>
+            
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <script src="{% static 'js/jquery.js' %}"></script>
+    <script src="{% static 'js/js.cookie.js' %}"></script>
+    <script src="{% static 'js/bootstrap.js' %}"></script>
+    <script>
+      var chatterbotUrl = '{% url "chatterbot:chatterbot" %}';
+      var csrftoken = Cookies.get('csrftoken');
+
+      function csrfSafeMethod(method) {
+        // these HTTP methods do not require CSRF protection
+        return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+      }
+
+      $.ajaxSetup({
+        beforeSend: function(xhr, settings) {
+          if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+            xhr.setRequestHeader("X-CSRFToken", csrftoken);
+          }
+        }
+      });
+
+      var $chatlog = $('.js-chat-log');
+      var $input = $('.js-text');
+      var $sayButton = $('.js-say');
+
+      function createRow(text) {
+        var $row = $('<li class="list-group-item"></li>');
+        $row.text(text);
+        $chatlog.append($row);
+      }
+      
+      //add card by Perry
+      function cardRowReply(text){
+        // var $lirow = $('');
+        var $cardRow = $('<li class="list-group-item">'+
+              '<div class="card" style="width: 20rem;">'+
+              '<img class="card-img-top" src="data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22318%22%20height%3D%22180%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20318%20180%22%20preserveAspectRatio%3D%22none%22%3E%3Cdefs%3E%3Cstyle%20type%3D%22text%2Fcss%22%3E%23holder_16146e89f4f%20text%20%7B%20fill%3Argba(255%2C255%2C255%2C.75)%3Bfont-weight%3Anormal%3Bfont-family%3AHelvetica%2C%20monospace%3Bfont-size%3A16pt%20%7D%20%3C%2Fstyle%3E%3C%2Fdefs%3E%3Cg%20id%3D%22holder_16146e89f4f%22%3E%3Crect%20width%3D%22318%22%20height%3D%22180%22%20fill%3D%22%23777%22%3E%3C%2Frect%3E%3Cg%3E%3Ctext%20x%3D%22118.015625%22%20y%3D%2297.2%22%3E318x180%3C%2Ftext%3E%3C%2Fg%3E%3C%2Fg%3E%3C%2Fsvg%3E" alt="Card image cap">'+
+              '<div class="card-block">'+
+                '<h4 class="card-title">Card title</h4>'+
+                '<p class="card-text">Some quick example text to build on the card title and make up the bulk of the cards content.</p>'+
+                '<a href="#" class="btn btn-primary">Find more detail</a>'+
+              '</div>'+
+            '</div>'+
+            '</li>');
+        // $cardRow.text(text);
+        $cardRow[0].childNodes[0].childNodes[1].childNodes[0].innerText = text;
+        $cardRow[0].childNodes[0].childNodes[1].childNodes[1].innerText = text;
+        $cardRow[0].childNodes[0].childNodes[1].childNodes[2].setAttribute('href','http://www.baidu.com');
+        $chatlog.append($cardRow[0].outerHTML);
+      } 
+      function submitInput() {
+        var inputData = {
+          'text': $input.val()
+        }
+
+        // Display the user's input on the web page
+        createRow(inputData.text);
+
+        var $submit = $.ajax({
+          type: 'POST',
+          url: chatterbotUrl,
+          data: JSON.stringify(inputData),
+          contentType: 'application/json'
+        });
+
+        $submit.done(function(statement) {
+          cardRowReply(statement.text);
+
+            // Clear the input field
+            $input.val('');
+
+            // Scroll to the bottom of the chat interface
+            $chatlog[0].scrollTop = $chatlog[0].scrollHeight;
+        });
+
+        $submit.fail(function() {
+          // TODO: Handle errors
+        });
+      }
+
+      $sayButton.click(function() {
+        submitInput();
+      });
+
+      $input.keydown(function(event) {
+        // Submit the input when the enter button is pressed
+        if (event.keyCode == 13) {
+          submitInput();
+        }
+      });
+    </script>
+  </body>
+</html>
